@@ -1,10 +1,14 @@
 pipeline {
-    agent any 
+    agent any
+    tools {
+        jdk 'myjava'
+        maven 'mymaven'
+    }
     stages {
         stage('Clone') {
             steps {
                 echo "checking out the repo"
-                git 'https://github.com/vathsalahn/jenkins-demo.git'
+                git 'https://github.com/mrathne/pipelinecode.git'
             
             }
         }
@@ -27,7 +31,8 @@ pipeline {
             steps {
                 script {
                     echo "deployment"
-                    sh 'cp MavenProject/multi3/target/*.war /Applications/apache-tomcat-7.0.88/webapps/'
+                    sh 'chmod -R 755 MavenProject/multi3/target/'
+                    sh 'cp MavenProject/multi3/target/*.war /home/centos/Tomcat8/apache-tomcat-8.0.9/webapps/'
                 }
             }
         }
@@ -46,16 +51,18 @@ pipeline {
         stage("Metrics"){
             steps{
             parallel ( "JavaNcss Report":   
-            {
+            { 
               node('window'){
-                git 'https://github.com/vathsalahn/jenkins-demo.git'
+                git 'https://github.com/mrathne/pipelinecode.git'
                 sh "cd javancss-master ; mvn test javancss:report ; pwd"
                   }
             },
             "FindBugs Report" : {
             node('window'){
+                sh "chmod -R 777 ../"
+                sh "echo $workspace"
                 sh "mkdir javancss1 ; cd javancss1 ;pwd"
-                git 'https://github.com/vathsalahn/jenkins-demo.git'
+                git 'https://github.com/mrathne/pipelinecode.git'
                 sh "cd javancss-master ; mvn findbugs:findbugs ; pwd"
                 deleteDir()
                 }
@@ -65,7 +72,7 @@ pipeline {
             }
          post{
                 success {
-                    emailext body: 'Successfully completed pipeline project with archiving the artifacts', subject: 'Pipeline was successfull', to: 'vathsala.hn22@gmail.com'
+                    emailext body: 'Successfully completed pipeline project with archiving the artifacts', subject: 'Pipeline was successfull', to: 'jenkinsmodule4@gmail.com'
                 }
     }
 }
