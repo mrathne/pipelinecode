@@ -7,7 +7,7 @@ pipeline {
     stages {
         stage('Clone') {
             steps {
-                echo "checking out the repo"
+                echo "checking out the repository"
                 git 'https://github.com/mrathne/pipelinecode.git'
             
             }
@@ -26,6 +26,7 @@ pipeline {
             }
             
         }
+
         stage('Deployment') {
             // Deployment
             steps {
@@ -36,46 +37,44 @@ pipeline {
                 }
             }
         }
+		
         stage('publish html report') {
             steps{
                 echo "publishing the html report"
                 publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: '', reportFiles: 'index.html', reportName: 'HTML Report', reportTitles: ''])
             }
         }
-        stage('clean up') {
-            steps {
-                echo "cleaning up the workspace"
-                cleanWs()
-            }
-        }
         stage("Metrics"){
             steps{
-            parallel ( "JavaNcss Report":   
-            { 
-              node('window'){
-                git 'https://github.com/mrathne/pipelinecode.git'
-                sh "cd javancss-master ; mvn test javancss:report ; pwd"
-                  }
-            },
-            "FindBugs Report" : {
-            node('window'){
-                sh "chmod -R 777 ../"
-                sh "echo $workspace"
-                sh "mkdir javancss1 ; cd javancss1 ;pwd"
-                git 'https://github.com/mrathne/pipelinecode.git'
-                sh "cd javancss-master ; mvn findbugs:findbugs ; pwd"
-                deleteDir()
-                }
-
-              }
-         )
+				parallel ( "Cobertura Report":   
+				{ 
+				  node('window'){
+					git 'https://github.com/mrathne/pipelinecode.git'
+					sh "cd MavenProject ; mvn cobertura:cobertura -Dcobertura.report.format=xml ; pwd"
+			      }
+				},
+				"FindBugs Report" : {
+					node('window'){
+						sh "chmod -R 777 ../"
+						sh "echo $workspace"
+						sh "mkdir findbug ; cd findbug ;pwd"
+						git 'https://github.com/mrathne/pipelinecode.git'
+						sh "cd MavenProject ; mvn findbugs:findbugs ; pwd"
+						deleteDir()
+					}
+		       })
             }
-         post{
-                success {
-                    emailext body: 'Successfully completed pipeline project with archiving the artifacts', subject: 'Pipeline was successfull', to: 'jenkinsmodule4@gmail.com'
-                }
-    }
-}
-        
+			 post{
+					success {
+						emailext body: 'Successfully completed pipeline project with archiving the artifacts', subject: 'Pipeline was successfull', to: '$emailrecepientlist'
+					}
+			}
+		}
+		stage('clean up') {
+				steps {
+					echo "cleaning up the workspace"
+					cleanWs()
+				}
+		}       
     }
 }
